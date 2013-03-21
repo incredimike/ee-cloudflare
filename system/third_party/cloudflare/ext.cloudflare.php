@@ -14,11 +14,15 @@ class Cloudflare_ext {
 	public	$ip_country 		= '';
 	public	$cloudflare_ip		= '';
 	public 	$is_cf 				= false;
-	
+	public  $ip_v4_list			= 'https://www.cloudflare.com/ips-v4';
+	public  $ip_v6_list			= 'https://www.cloudflare.com/ips-v6';
+
 	private $settings			= array();
 	
 	const	RANGE_DELIM			= "\n";
 	const	UNKNOWN_COUNTRY		= 'XX';
+
+
 	
 
 	public function __construct( $settings='' )
@@ -40,10 +44,12 @@ class Cloudflare_ext {
 		$this->settings = array( 
 			'cf_api_host'		=> 'ssl://www.cloudflare.com',
 			'cf_api_port'		=> '443',
-			'cf_ipv4_ranges'	=> "204.93.240.0/24\n204.93.177.0/24\n199.27.128.0/21\n173.245.48.0/20\n103.22.200.0/22\n141.101.64.0/18\n108.162.192.0/18\n190.93.240.1/20",
-			'cf_ipv6_ranges'	=> "2400:cb00::/32\n2606:4700::/32\n2803:f800::/32",
+			'cf_ipv4_ranges'	=> implode("\n", array("204.93.240.0/24", "204.93.177.0/24", "199.27.128.0/21", "173.245.48.0/20", "103.22.200.0/22", "141.101.64.0/18", "108.162.192.0/18", "190.93.240.1/20", "188.114.96.0/20", "198.41.128.0/17")),
+			'cf_ipv6_ranges'	=> implode("\n", array("2400:cb00::/32", "2606:4700::/32", "2803:f800::/32")),
 			'overwrite_addr'	=> 'y',
 		);
+
+		$this->update_ip_lists();
 
 		$this->EE->db->insert('extensions', array(
 			'class'    => get_class($this),
@@ -80,6 +86,27 @@ class Cloudflare_ext {
 		return FALSE;
 	}
  
+	function update_ip_lists () 
+	{
+
+		if (!empty($ip_v4_list)) {
+			$ipv4 = @file( $ip_v4_list );
+			if ($ipv4 !== false && isset($this->settings)) {
+				$this->settings['cf_ipv4_ranges'] = implode("\n", $ipv4);
+			}
+		} 
+
+		if (!empty($ip_v6_list)) {
+			$ipv6 = @file( $ip_v6_list );
+			if ($ipv6 !== false && isset($this->settings)) {
+				$this->settings['cf_ipv6_ranges'] = implode("\n", $ipv6);
+			}
+		}
+
+		return ($ipv4 && $ipv6);
+	}
+
+
 	/**
 	 * Hook pre_system for running the CloudFlare overwites asap.
 	 */
